@@ -7,9 +7,13 @@ namespace IndtApi.Filters.ActionFilters
 {
     public class Usuarios_FiltroValidacaoIdUsuarios : ActionFilterAttribute
     {
-       
+        private readonly ApplicationDbContext db;
 
-     
+        public Usuarios_FiltroValidacaoIdUsuarios(ApplicationDbContext db)
+        {
+            this.db = db;
+        }
+
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             base.OnActionExecuting(context);
@@ -26,14 +30,23 @@ namespace IndtApi.Filters.ActionFilters
                     };
                     context.Result = new BadRequestObjectResult(problemDetails);
                 }
-                else if (!UsuariosRepositorio.UsuariosExiste(Id.Value)) 
+                else
                 {
-                        context.ModelState.AddModelError("Id", "Id não existe.");
-                        var problemDetails = new ValidationProblemDetails(context.ModelState)
+                        var usuario = db.Usuarios.Find(Id.Value);
+                        
+                        if (usuario == null)
                         {
-                            Status = StatusCodes.Status404NotFound
-                        };
-                        context.Result = new NotFoundObjectResult(problemDetails);
+                            context.ModelState.AddModelError("Id", "Id não existe.");
+                            var problemDetails = new ValidationProblemDetails(context.ModelState)
+                            {
+                                Status = StatusCodes.Status404NotFound
+                            };
+                            context.Result = new NotFoundObjectResult(problemDetails);
+                        }
+                        else
+                    {
+                        context.HttpContext.Items["usuario"]  = usuario;
+                    }
                 }
             }
         }

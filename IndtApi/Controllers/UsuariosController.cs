@@ -13,31 +13,37 @@ namespace IndtApi.Controllers
 
     public class UsuariosControllers: ControllerBase
     {
-        
+        private readonly ApplicationDbContext db;
+
+        public UsuariosControllers(ApplicationDbContext db) 
+        {
+            this.db = db;
+        }
  
         [HttpGet]
         [Route("/usuarios")]
         public IActionResult GetUsuarios()
         {
-            return Ok(UsuariosRepositorio.GetUsuarios());
+            return Ok(db.Usuarios.ToList());
         }
 
         [HttpGet]
         [Route("/usuarios/{id}")]
-        [Usuarios_FiltroValidacaoIdUsuarios]
+        [TypeFilter(typeof(Usuarios_FiltroValidacaoIdUsuarios))]
         public IActionResult GetUsuariosById(int id)
         {
-            return Ok(UsuariosRepositorio.GetUsuariosById(id)) ;
+            
+            return Ok(HttpContext.Items["usuario"]) ;
         }
 
         [HttpPost]
         [Route("/usuarios")]
-        [Usuarios_FiltroValidacaoCriacaoUsuarios]
+        [TypeFilter(typeof(Usuarios_FiltroValidacaoCriacaoUsuarios))]
         public IActionResult CreateUsuario([FromBody] Usuarios usuario)
         {
-
-            UsuariosRepositorio.AddUsuarios(usuario);
-
+            this.db.Usuarios.Add(usuario);
+            this.db.SaveChanges();
+            
             return CreatedAtAction(nameof(GetUsuariosById),
                 new { id = usuario.Id },
                 usuario);
@@ -46,41 +52,39 @@ namespace IndtApi.Controllers
 
         [HttpPut]
         [Route("/usuarios/{id}")]
-        [Usuarios_FiltroValidacaoIdUsuarios]
+        [TypeFilter(typeof(Usuarios_FiltroValidacaoIdUsuarios))]
         [Usuarios_FiltroValidacaoAtualizacaoUsuarios]
+        [TypeFilter(typeof(Usuarios_FiltroExcecoesAtualizacao))]
 
 
         public IActionResult UpdateUsuario(int id, Usuarios usuario)
         {
-          
 
-            try
-            {
-                UsuariosRepositorio.UpdateUsuario(usuario);
-            }
-            catch
-            {
-                if (!UsuariosRepositorio.UsuariosExiste(id))
-                    return NotFound();
+            var usuarioToUpdate = HttpContext.Items["usuario"] as Usuarios;
+            usuarioToUpdate.Nome = usuario.Nome;
+            usuarioToUpdate.Sobrenome = usuario.Sobrenome;
+            usuarioToUpdate.Email = usuario.Email;
+            usuarioToUpdate.Senha = usuario.Senha;
+            usuarioToUpdate.NivelDeAcesso = usuario.NivelDeAcesso;
 
-                throw;
-            }
-           
+            db.SaveChanges();
+
 
             return NoContent();
         }
 
         [HttpDelete]
         [Route("/usuarios/{id}")]
-        [Usuarios_FiltroValidacaoIdUsuarios]
-
+        [TypeFilter(typeof(Usuarios_FiltroValidacaoIdUsuarios))]
 
         public IActionResult DeleteUsuario(int id)
         {
-            var usuario = UsuariosRepositorio.GetUsuariosById(id);
-            UsuariosRepositorio.DeleteUsuario(id);
-            
-            return Ok(usuario);
+            var usuarioToDelete = HttpContext.Items["usuario"] as Usuarios;
+
+            db.Usuarios.Remove(usuarioToDelete);
+            db.SaveChanges();
+
+            return Ok(usuarioToDelete);
         }
     }
 }

@@ -9,7 +9,7 @@ namespace IndtApi.Data
         {
             
         }
-        public DbSet<Usuarios> Usuarios{get; set; }
+        public DbSet<Usuarios> Usuarios {get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
